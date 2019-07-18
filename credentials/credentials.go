@@ -45,6 +45,7 @@ type Provider interface {
 type grantType string
 
 const (
+	deviceGrantType   grantType = "device"
 	passwordGrantType grantType = "password"
 )
 
