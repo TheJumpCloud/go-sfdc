@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/g8rswimmer/go-sfdc/session"
+	"github.com/TheJumpCloud/go-sfdc/session"
 )
 
 type mockSubrequester struct {

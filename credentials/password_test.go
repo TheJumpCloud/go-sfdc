@@ -10,7 +10,7 @@ import (
 
 func mockPasswordRetriveReader(creds PasswordCredentails) io.Reader {
 	form := url.Values{}
-	form.Add("grant_type", string(passwordGrantType))
+	form.Add("grant_type", string(PasswordGrantType))
 	form.Add("username", creds.Username)
 	form.Add("password", creds.Password)
 	form.Add("client_id", creds.ClientID)

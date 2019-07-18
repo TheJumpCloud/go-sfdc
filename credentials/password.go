@@ -12,7 +12,7 @@ type passwordProvider struct {
 
 func (provider *passwordProvider) Retrieve() (io.Reader, error) {
 	form := url.Values{}
-	form.Add("grant_type", string(passwordGrantType))
+	form.Add("grant_type", string(PasswordGrantType))
 	form.Add("username", provider.creds.Username)
 	form.Add("password", provider.creds.Password)
 	form.Add("client_id", provider.creds.ClientID)

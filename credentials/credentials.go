@@ -42,11 +42,11 @@ type Provider interface {
 	URL() string
 }
 
-type grantType string
+type GrantType string
 
 const (
-	deviceGrantType   grantType = "device"
-	passwordGrantType grantType = "password"
+	DeviceGrantType   GrantType = "device"
+	PasswordGrantType GrantType = "password"
 )
 
 // Retrieve will return the reader for the HTTP request body.

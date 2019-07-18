@@ -3,7 +3,7 @@ package sfdc
 import (
 	"net/http"
 
-	"github.com/g8rswimmer/go-sfdc/credentials"
+	"github.com/TheJumpCloud/go-sfdc/credentials"
 )
 
 // Configuration is the structure for goforce sessions.
@@ -16,5 +16,6 @@ import (
 type Configuration struct {
 	Credentials *credentials.Credentials
 	Client      *http.Client
+	Grant       credentials.GrantType
 	Version     int
 }

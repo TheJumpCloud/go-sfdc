@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 
-	"github.com/g8rswimmer/go-sfdc"
-	"github.com/g8rswimmer/go-sfdc/credentials"
+	"github.com/TheJumpCloud/go-sfdc"
+	"github.com/TheJumpCloud/go-sfdc/credentials"
 )
 
 // Session is the authentication response.  This is used to generate the
@@ -71,6 +73,20 @@ func Open(config sfdc.Configuration) (*Session, error) {
 	if config.Version <= 0 {
 		return nil, errors.New("session: configuration version can not be less than zero")
 	}
+
+	switch config.Grant {
+	case credentials.PasswordGrantType:
+		return openPasswordSession(config)
+
+	case credentials.DeviceGrantType:
+		return openDeviceSession(config)
+
+	default:
+		return nil, fmt.Errorf("session: invalid grant type %s", config.Grant)
+	}
+}
+
+func openPasswordSession(config sfdc.Configuration) (*Session, error) {
 	request, err := passwordSessionRequest(config.Credentials)
 
 	if err != nil {
@@ -88,6 +104,143 @@ func Open(config sfdc.Configuration) (*Session, error) {
 	}
 
 	return session, nil
+}
+
+func openDeviceSession(config sfdc.Configuration) (*Session, error) {
+	request, err := buildDeviceAuthenticationFlowInitiationRequest(config.Credentials)
+	if err != nil {
+		return nil, fmt.Errorf("failed to ")
+	}
+
+	initResp, err := makeDeviceAuthenticationFlowInitiationRequest(request, config.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenReq, err := buildDeviceAuthenticationFlowAccessRequest(config.Credentials, initResp)
+	if err != nil {
+		return nil, err
+	}
+
+	var tokenResp *deviceAccessTokenResponse
+	for {
+		select {
+		case <-time.After(time.Duration(initResp.Interval + 1)):
+			// TODO(@rmulley): Make request
+			var tokenErrResp *deviceAccessTokenErrorResponse
+			if tokenResp, tokenErrResp, err = makeDeviceAuthenticationFlowAccessTokenRequest(accessTokenReq, config.Client); err != nil {
+				log.Fatalf("Error polling for device access token: %s", err)
+			}
+
+			// Success!
+			if tokenResp != nil {
+				break
+			}
+
+			if tokenErrResp.Error == AuthorizationPendingErrorCode {
+				log.Printf("Authorization pending. Please enter code '%s' at %s to authorize application", initResp.UserCode, initResp.VerificationURI)
+				log.Printf("Will attempt to authorize again in %d seconds", initResp.Interval)
+			} else {
+				log.Fatalf("Failed to retrieve access token: %s: %s", tokenErrResp.Error, tokenErrResp.ErrorDescription)
+			}
+		}
+	}
+
+	log.Fatalf("SUCCESS: %+v", tokenResp)
+
+	session := &Session{
+		// response: tokenResp,
+		config: config,
+	}
+
+	return session, nil
+}
+
+func buildDeviceAuthenticationFlowInitiationRequest(creds *credentials.Credentials) (*http.Request, error) {
+	oauthURL := creds.URL() + oauthEndpoint
+
+	body, err := creds.Retrieve()
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, oauthURL, body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Add("Accept", "application/json")
+	return request, nil
+}
+
+func makeDeviceAuthenticationFlowInitiationRequest(request *http.Request, client *http.Client) (*deviceAuthenticationFlowInitiationResponse, error) {
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("session response error: %d %s", response.StatusCode, response.Status)
+	}
+	decoder := json.NewDecoder(response.Body)
+	defer response.Body.Close()
+
+	var sessionResponse deviceAuthenticationFlowInitiationResponse
+	err = decoder.Decode(&sessionResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sessionResponse, nil
+}
+
+func buildDeviceAuthenticationFlowAccessRequest(creds *credentials.Credentials, authResp *deviceAuthenticationFlowInitiationResponse) (*http.Request, error) {
+	oauthURL := creds.URL() + oauthEndpoint
+
+	body, err := creds.Retrieve()
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, oauthURL, body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Add("Accept", "application/json")
+	return request, nil
+}
+
+func makeDeviceAuthenticationFlowAccessTokenRequest(request *http.Request, client *http.Client) (*deviceAccessTokenResponse, *deviceAccessTokenErrorResponse, error) {
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("session response error: %d %s", response.StatusCode, response.Status)
+	}
+	decoder := json.NewDecoder(response.Body)
+	defer response.Body.Close()
+
+	// Check for an error response first.
+	var errResponse *deviceAccessTokenErrorResponse
+	if err = decoder.Decode(&errResponse); err != nil {
+		return nil, errResponse, nil
+	}
+
+	// Check for a successful response.
+	var tokenResp *deviceAccessTokenResponse
+	err = decoder.Decode(&tokenResp)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return tokenResp, nil, nil
 }
 
 func passwordSessionRequest(creds *credentials.Credentials) (*http.Request, error) {
