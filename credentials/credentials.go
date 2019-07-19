@@ -38,6 +38,8 @@ type Credentials struct {
 //
 // URL is the URL base for the session endpoint.
 type Provider interface {
+	ClientID() string
+	ClientSecret() string
 	Retrieve() (io.Reader, error)
 	URL() string
 }
@@ -48,6 +50,16 @@ const (
 	DeviceGrantType   GrantType = "device"
 	PasswordGrantType GrantType = "password"
 )
+
+// ClientID returns the provider's client ID.
+func (creds *Credentials) ClientID() string {
+	return creds.provider.ClientID()
+}
+
+// ClientSecret returns the provider's client ID.
+func (creds *Credentials) ClientSecret() string {
+	return creds.provider.ClientSecret()
+}
 
 // Retrieve will return the reader for the HTTP request body.
 func (creds *Credentials) Retrieve() (io.Reader, error) {

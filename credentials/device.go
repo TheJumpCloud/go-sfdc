@@ -10,6 +10,7 @@ type DeviceCredentials struct {
 	ClientID     string
 	ClientSecret string
 	Code         string
+	Scopes       []string
 	URL          string
 }
 
@@ -19,9 +20,6 @@ type deviceProvider struct {
 
 // NewDeviceCredentials will create a crendential with the device credentials.
 func NewDeviceCredentials(creds DeviceCredentials) (*Credentials, error) {
-	// if err := validatePasswordCredentails(creds); err != nil {
-	// 	return nil, err
-	// }
 	return &Credentials{
 		provider: &deviceProvider{
 			creds: creds,
@@ -29,15 +27,26 @@ func NewDeviceCredentials(creds DeviceCredentials) (*Credentials, error) {
 	}, nil
 }
 
+func (provider *deviceProvider) ClientID() string {
+	return provider.creds.ClientID
+}
+
+func (provider *deviceProvider) ClientSecret() string {
+	return provider.creds.ClientSecret
+}
+
 func (provider *deviceProvider) Retrieve() (io.Reader, error) {
 	form := url.Values{}
 
-	form.Add("grant_type", string(DeviceGrantType))
+	form.Add("response_type", "device_code")
 	form.Add("client_id", provider.creds.ClientID)
-	form.Add("code", provider.creds.Code)
 
 	if provider.creds.ClientSecret != "" {
 		form.Add("client_secret", provider.creds.ClientSecret)
+	}
+
+	for _, scope := range provider.creds.Scopes {
+		form.Add("scope", scope)
 	}
 
 	return strings.NewReader(form.Encode()), nil
