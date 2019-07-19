@@ -64,7 +64,7 @@ type accessTokenResponse struct {
 const oauthEndpoint = "/services/oauth2/token"
 
 // Open is used to authenticate with Salesforce and open a session.  The user will need to
-// supply the proper credentails and a HTTP client.
+// supply the proper credentials and a HTTP client.
 func Open(config sfdc.Configuration) (*Session, error) {
 	if config.Credentials == nil {
 		return nil, errors.New("session: configuration crendentials can not be nil")
