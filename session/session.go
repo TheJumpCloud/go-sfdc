@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TheJumpCloud/go-sfdc"
-	"github.com/TheJumpCloud/go-sfdc/credentials"
+	"github.com/g8rswimmer/go-sfdc"
+	"github.com/g8rswimmer/go-sfdc/credentials"
 )
 
 // Session is the authentication response.  This is used to generate the

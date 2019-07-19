@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/TheJumpCloud/go-sfdc"
-	"github.com/TheJumpCloud/go-sfdc/session"
+	"github.com/g8rswimmer/go-sfdc"
+	"github.com/g8rswimmer/go-sfdc/session"
 )
 
 // Subrequester provides the composite API requests.  The
