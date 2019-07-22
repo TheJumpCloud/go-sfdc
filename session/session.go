@@ -109,6 +109,22 @@ func openPasswordSession(config sfdc.Configuration) (*Session, error) {
 }
 
 func openDeviceSession(config sfdc.Configuration) (*Session, error) {
+	if config.ExistingSessionInfo != nil {
+		session := &Session{
+			response: &accessTokenResponse{
+				AccessToken: config.ExistingSessionInfo.AccessToken,
+				InstanceURL: config.ExistingSessionInfo.InstanceURL,
+				ID:          config.ExistingSessionInfo.ID,
+				TokenType:   config.ExistingSessionInfo.TokenType,
+				IssuedAt:    config.ExistingSessionInfo.IssuedAt,
+				Signature:   config.ExistingSessionInfo.Signature,
+			},
+			config: config,
+		}
+
+		return session, nil
+	}
+
 	request, err := buildDeviceAuthenticationFlowInitiationRequest(config.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ")
@@ -293,6 +309,26 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*acces
 	}
 
 	return &sessionResponse, nil
+}
+
+func (session *Session) AccessToken() string {
+	return session.response.AccessToken
+}
+
+func (session *Session) TokenType() string {
+	return session.response.TokenType
+}
+
+func (session *Session) ID() string {
+	return session.response.ID
+}
+
+func (session *Session) IssuedAt() string {
+	return session.response.IssuedAt
+}
+
+func (session *Session) Signature() string {
+	return session.response.Signature
 }
 
 // InstanceURL will retuern the Salesforce instance
