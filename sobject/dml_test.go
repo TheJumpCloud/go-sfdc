@@ -296,6 +296,7 @@ func Test_dml_Update(t *testing.T) {
 					client: mockHTTPClient(func(req *http.Request) *http.Response {
 						return &http.Response{
 							StatusCode: http.StatusNoContent,
+							Body:       ioutil.NopCloser(strings.NewReader("resp")),
 							Header:     make(http.Header),
 						}
 					}),
@@ -537,6 +538,7 @@ func Test_dml_Upsert(t *testing.T) {
 
 						return &http.Response{
 							StatusCode: http.StatusNoContent,
+							Body:       ioutil.NopCloser(strings.NewReader("")),
 							Header:     make(http.Header),
 						}
 					}),
@@ -626,6 +628,7 @@ func Test_dml_Delete(t *testing.T) {
 						return &http.Response{
 							StatusCode: 500,
 							Status:     "Some Status",
+							Body:       ioutil.NopCloser(strings.NewReader("")),
 							Header:     make(http.Header),
 						}
 					}),
@@ -648,6 +651,7 @@ func Test_dml_Delete(t *testing.T) {
 
 						return &http.Response{
 							StatusCode: http.StatusNoContent,
+							Body:       ioutil.NopCloser(strings.NewReader("")),
 							Header:     make(http.Header),
 						}
 					}),
