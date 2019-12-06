@@ -115,12 +115,12 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 	if err != nil {
 		return nil, err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("session response error: %d %s", response.StatusCode, response.Status)
 	}
 	decoder := json.NewDecoder(response.Body)
-	defer response.Body.Close()
 
 	var sessionResponse sessionPasswordResponse
 	err = decoder.Decode(&sessionResponse)

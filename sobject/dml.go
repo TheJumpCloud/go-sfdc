@@ -191,11 +191,10 @@ func (d *dml) updateResponse(request *http.Request) error {
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusNoContent {
 		decoder := json.NewDecoder(response.Body)
-		defer response.Body.Close()
-
 		var updateErrs []sfdc.Error
 		err = decoder.Decode(&updateErrs)
 		var errMsg error
@@ -255,6 +254,7 @@ func (d *dml) upsertResponse(request *http.Request) (UpsertValue, error) {
 	if err != nil {
 		return UpsertValue{}, err
 	}
+	defer response.Body.Close()
 
 	decoder := json.NewDecoder(response.Body)
 
@@ -263,7 +263,6 @@ func (d *dml) upsertResponse(request *http.Request) (UpsertValue, error) {
 
 	switch response.StatusCode {
 	case http.StatusCreated:
-		defer response.Body.Close()
 		isInsert = true
 		err = decoder.Decode(&value)
 		if err != nil {
@@ -272,7 +271,6 @@ func (d *dml) upsertResponse(request *http.Request) (UpsertValue, error) {
 	case http.StatusNoContent:
 		isInsert = false
 	default:
-		defer response.Body.Close()
 		var upsetErrs []sfdc.Error
 		err = decoder.Decode(&upsetErrs)
 		errMsg := fmt.Errorf("upsert response err: %d %s", response.StatusCode, response.Status)
@@ -319,6 +317,7 @@ func (d *dml) deleteResponse(request *http.Request) error {
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("delete has failed %d %s", response.StatusCode, response.Status)
