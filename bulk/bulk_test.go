@@ -165,7 +165,7 @@ func TestResource_AllJobs(t *testing.T) {
 						"operation": "Insert",
 						"state": "Open",
 						"systemModstamp": "1/1/1980"
-					}								
+					}
 				]
 			}`
 			return &http.Response{

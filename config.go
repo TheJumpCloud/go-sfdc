@@ -16,5 +16,6 @@ import (
 type Configuration struct {
 	Credentials *credentials.Credentials
 	Client      *http.Client
+	Grant       credentials.GrantType
 	Version     int
 }
