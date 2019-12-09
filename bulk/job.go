@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	sfdc "github.com/g8rswimmer/go-sfdc"
-	"github.com/g8rswimmer/go-sfdc/session"
+	sfdc "github.com/TheJumpCloud/go-sfdc"
+	"github.com/TheJumpCloud/go-sfdc/session"
 )
 
 // JobType is the bulk job type.
@@ -290,11 +290,9 @@ func (j *Job) infoResponse(request *http.Request) (Info, error) {
 		err = decoder.Decode(&errs)
 		var errMsg error
 		if err == nil {
-			var allErrs string
 			for _, err := range errs {
-				allErrs += fmt.Sprintf("job err: %s: %s", err.ErrorCode, err.Message)
+				errMsg = fmt.Errorf("job err: %s: %s", err.ErrorCode, err.Message)
 			}
-			errMsg = fmt.Errorf(allErrs)
 		} else {
 			errMsg = fmt.Errorf("job err: %d %s", response.StatusCode, response.Status)
 		}
@@ -355,7 +353,6 @@ func (j *Job) Delete() error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusNoContent {
 		return errors.New("job error: unable to delete job")
@@ -377,7 +374,6 @@ func (j *Job) Upload(body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusCreated {
 		return errors.New("job error: unable to upload job")
@@ -399,19 +395,17 @@ func (j *Job) SuccessfulRecords() ([]SuccessfulRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		decoder := json.NewDecoder(response.Body)
+		defer response.Body.Close()
 		var errs []sfdc.Error
 		err = decoder.Decode(&errs)
 		var errMsg error
 		if err == nil {
-			var allErrs string
 			for _, err := range errs {
-				allErrs += fmt.Sprintf("job err: %s: %s", err.ErrorCode, err.Message)
+				errMsg = fmt.Errorf("job err: %s: %s", err.ErrorCode, err.Message)
 			}
-			errMsg = fmt.Errorf(allErrs)
 		} else {
 			errMsg = fmt.Errorf("job err: %d %s", response.StatusCode, response.Status)
 		}
@@ -419,6 +413,7 @@ func (j *Job) SuccessfulRecords() ([]SuccessfulRecord, error) {
 	}
 
 	scanner := bufio.NewScanner(response.Body)
+	defer response.Body.Close()
 	scanner.Split(bufio.ScanLines)
 	var records []SuccessfulRecord
 	delimiter := j.delimiter()
@@ -466,19 +461,17 @@ func (j *Job) FailedRecords() ([]FailedRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		decoder := json.NewDecoder(response.Body)
+		defer response.Body.Close()
 		var errs []sfdc.Error
 		err = decoder.Decode(&errs)
 		var errMsg error
 		if err == nil {
-			var allErrs string
 			for _, err := range errs {
-				allErrs += fmt.Sprintf("job err: %s: %s", err.ErrorCode, err.Message)
+				errMsg = fmt.Errorf("job err: %s: %s", err.ErrorCode, err.Message)
 			}
-			errMsg = fmt.Errorf(allErrs)
 		} else {
 			errMsg = fmt.Errorf("job err: %d %s", response.StatusCode, response.Status)
 		}
@@ -486,6 +479,7 @@ func (j *Job) FailedRecords() ([]FailedRecord, error) {
 	}
 
 	scanner := bufio.NewScanner(response.Body)
+	defer response.Body.Close()
 	scanner.Split(bufio.ScanLines)
 	var records []FailedRecord
 	delimiter := j.delimiter()
@@ -528,19 +522,17 @@ func (j *Job) UnprocessedRecords() ([]UnprocessedRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		decoder := json.NewDecoder(response.Body)
+		defer response.Body.Close()
 		var errs []sfdc.Error
 		err = decoder.Decode(&errs)
 		var errMsg error
 		if err == nil {
-			var allErrs string
 			for _, err := range errs {
-				allErrs += fmt.Sprintf("job err: %s: %s\n", err.ErrorCode, err.Message)
+				errMsg = fmt.Errorf("job err: %s: %s", err.ErrorCode, err.Message)
 			}
-			errMsg = fmt.Errorf(allErrs)
 		} else {
 			errMsg = fmt.Errorf("job err: %d %s", response.StatusCode, response.Status)
 		}
@@ -548,6 +540,7 @@ func (j *Job) UnprocessedRecords() ([]UnprocessedRecord, error) {
 	}
 
 	scanner := bufio.NewScanner(response.Body)
+	defer response.Body.Close()
 	scanner.Split(bufio.ScanLines)
 	var records []UnprocessedRecord
 	delimiter := j.delimiter()
@@ -589,9 +582,6 @@ func (j *Job) fields(header []string, offset int) []string {
 func (j *Job) record(fields, values []string) map[string]string {
 	record := make(map[string]string)
 	for idx, field := range fields {
-		if idx >= len(values) {
-			break
-		}
 		record[field] = values[idx]
 	}
 	return record

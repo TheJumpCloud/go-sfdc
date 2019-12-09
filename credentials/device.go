@@ -45,8 +45,8 @@ func (provider *deviceProvider) Retrieve() (io.Reader, error) {
 		form.Add("client_secret", provider.creds.ClientSecret)
 	}
 
-	for _, scope := range provider.creds.Scopes {
-		form.Add("scope", scope)
+	if len(provider.creds.Scopes) > 0 {
+		form.Add("scope", strings.Join(provider.creds.Scopes, " "))
 	}
 
 	return strings.NewReader(form.Encode()), nil

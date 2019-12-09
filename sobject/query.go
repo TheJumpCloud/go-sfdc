@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/g8rswimmer/go-sfdc"
-	"github.com/g8rswimmer/go-sfdc/session"
+	"github.com/TheJumpCloud/go-sfdc"
+	"github.com/TheJumpCloud/go-sfdc/session"
 )
 
 // Querier is the interface used to query a SObject from
@@ -347,13 +347,13 @@ func (q *query) contentResponse(request *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("deleted records response err: %d %s", response.StatusCode, response.Status)
 	}
 
 	body, err := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
 
 	return body, err
 }
