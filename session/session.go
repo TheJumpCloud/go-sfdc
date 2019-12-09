@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/g8rswimmer/go-sfdc"
-	"github.com/g8rswimmer/go-sfdc/credentials"
+	"github.com/TheJumpCloud/go-sfdc"
+	"github.com/TheJumpCloud/go-sfdc/credentials"
 )
 
 // Session is the authentication response.  This is used to generate the
@@ -53,15 +53,30 @@ type ServiceFormatter interface {
 }
 
 type accessTokenResponse struct {
-	AccessToken string `json:"access_token"`
-	InstanceURL string `json:"instance_url"`
-	ID          string `json:"id"`
-	TokenType   string `json:"token_type"`
-	IssuedAt    string `json:"issued_at"`
-	Signature   string `json:"signature"`
+	AccessToken  string `json:"access_token"`
+	ID           string `json:"id"`
+	InstanceURL  string `json:"instance_url"`
+	IssuedAt     string `json:"issued_at"`
+	RefreshToken string `json:"refresh_token"`
+	Signature    string `json:"signature"`
+	TokenType    string `json:"token_type"`
 }
 
 const oauthEndpoint = "/services/oauth2/token"
+
+func New(config sfdc.Configuration) *Session {
+	return &Session{
+		response: &accessTokenResponse{
+			AccessToken: config.ExistingSessionInfo.AccessToken,
+			InstanceURL: config.ExistingSessionInfo.InstanceURL,
+			ID:          config.ExistingSessionInfo.ID,
+			IssuedAt:    config.ExistingSessionInfo.IssuedAt,
+			Signature:   config.ExistingSessionInfo.Signature,
+			TokenType:   config.ExistingSessionInfo.TokenType,
+		},
+		config: config,
+	}
+}
 
 // Open is used to authenticate with Salesforce and open a session.  The user will need to
 // supply the proper credentials and a HTTP client.
@@ -109,6 +124,22 @@ func openPasswordSession(config sfdc.Configuration) (*Session, error) {
 }
 
 func openDeviceSession(config sfdc.Configuration) (*Session, error) {
+	if config.ExistingSessionInfo != nil {
+		session := &Session{
+			response: &accessTokenResponse{
+				AccessToken: config.ExistingSessionInfo.AccessToken,
+				InstanceURL: config.ExistingSessionInfo.InstanceURL,
+				ID:          config.ExistingSessionInfo.ID,
+				TokenType:   config.ExistingSessionInfo.TokenType,
+				IssuedAt:    config.ExistingSessionInfo.IssuedAt,
+				Signature:   config.ExistingSessionInfo.Signature,
+			},
+			config: config,
+		}
+
+		return session, nil
+	}
+
 	request, err := buildDeviceAuthenticationFlowInitiationRequest(config.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ")
@@ -279,12 +310,12 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*acces
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("session response error: %d %s", response.StatusCode, response.Status)
 	}
 	decoder := json.NewDecoder(response.Body)
+	defer response.Body.Close()
 
 	var sessionResponse accessTokenResponse
 	err = decoder.Decode(&sessionResponse)
@@ -293,6 +324,30 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*acces
 	}
 
 	return &sessionResponse, nil
+}
+
+func (session *Session) AccessToken() string {
+	return session.response.AccessToken
+}
+
+func (session *Session) RefreshToken() string {
+	return session.response.RefreshToken
+}
+
+func (session *Session) TokenType() string {
+	return session.response.TokenType
+}
+
+func (session *Session) ID() string {
+	return session.response.ID
+}
+
+func (session *Session) IssuedAt() string {
+	return session.response.IssuedAt
+}
+
+func (session *Session) Signature() string {
+	return session.response.Signature
 }
 
 // InstanceURL will retuern the Salesforce instance
